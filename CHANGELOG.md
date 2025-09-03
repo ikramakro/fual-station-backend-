@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- 2025-09-03: Update type definitions
 - 2025-02-11: docs(auth): fix CORS headers
 - 2024-12-04: feat(core): handle empty payload
 - 2024-05-14: refactor(core): fix CORS headers
