@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import authRoutes from './authRoutes.js';
+import stationRoutes from './stationRoutes.js';
+import userRoutes from './userRoutes.js';
+import supplierRoutes from './supplierRoutes.js';
+import productRoutes from './productRoutes.js';
+import tankRoutes from './tankRoutes.js';
+import nozzleRoutes from './nozzleRoutes.js';
+import dipReadingRoutes from './dipReadingRoutes.js';
+import purchaseRoutes from './purchaseRoutes.js';
+import fuelRateRoutes from './fuelRateRoutes.js';
+import shiftRoutes from './shiftRoutes.js';
+import customerRoutes from './customerRoutes.js';
+import saleRoutes from './saleRoutes.js';
+import accountRoutes from './accountRoutes.js';
+import reportRoutes from './reportRoutes.js';
+import dashboardRoutes from './dashboardRoutes.js';
+
+const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/stations', stationRoutes);
+router.use('/users', userRoutes);
+router.use('/suppliers', supplierRoutes);
+router.use('/products', productRoutes);
+router.use('/tanks', tankRoutes);
+router.use('/nozzles', nozzleRoutes);
+router.use('/dip-readings', dipReadingRoutes);
+router.use('/purchases', purchaseRoutes);
+router.use('/fuel-rates', fuelRateRoutes);
+router.use('/shifts', shiftRoutes);
+router.use('/customers', customerRoutes);
+router.use('/sales', saleRoutes);
+router.use('/accounts', accountRoutes);
+router.use('/reports', reportRoutes);
+router.use('/dashboard', dashboardRoutes);
+
+export default router;
