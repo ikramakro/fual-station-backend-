@@ -12,6 +12,12 @@ const stationSchema = new mongoose.Schema(
     timezone: { type: String, default: DEFAULT_TIMEZONE },
     currency: { type: String, default: DEFAULT_CURRENCY },
     fiscal_year_start: { type: Number, min: 1, max: 12, default: 7 },
+    low_fuel_alert_threshold_pct: { type: Number, min: 1, max: 100, default: 20 },
+    alert_channels: {
+      type: [String],
+      enum: ['in_app', 'sms', 'email'],
+      default: ['in_app'],
+    },
     is_active: { type: Boolean, default: true },
   },
   { timestamps: true }

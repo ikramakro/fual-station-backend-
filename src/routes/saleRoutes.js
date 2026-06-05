@@ -7,6 +7,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 const router = Router();
 
 router.use(authMiddleware);
+router.post('/sync', rbac('owner', 'manager', 'shift_lead', 'cashier'), asyncHandler(ctrl.syncOfflineSales));
 router.get('/', rbac('owner', 'manager', 'shift_lead', 'cashier'), asyncHandler(ctrl.listSales));
 router.post('/', rbac('owner', 'manager', 'shift_lead', 'cashier'), asyncHandler(ctrl.createSale));
 router.get('/:id', asyncHandler(ctrl.getSale));

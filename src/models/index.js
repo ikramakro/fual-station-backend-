@@ -20,6 +20,7 @@ export { default as Sale } from './Sale.js';
 export { default as SalePayment } from './SalePayment.js';
 export { default as StockLedger } from './StockLedger.js';
 export { default as GainLossVoucher } from './GainLossVoucher.js';
+export { default as LowFuelAlert } from './LowFuelAlert.js';
 export { default as Account } from './Account.js';
 export { default as Voucher } from './Voucher.js';
 export { default as Cheque } from './Cheque.js';

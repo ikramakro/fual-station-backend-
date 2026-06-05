@@ -15,10 +15,14 @@ import saleRoutes from './saleRoutes.js';
 import accountRoutes from './accountRoutes.js';
 import reportRoutes from './reportRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
+import permissionRoutes from './permissionRoutes.js';
+import auditRoutes from './auditRoutes.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/permissions', permissionRoutes);
+router.use('/audit-logs', auditRoutes);
 router.use('/stations', stationRoutes);
 router.use('/users', userRoutes);
 router.use('/suppliers', supplierRoutes);

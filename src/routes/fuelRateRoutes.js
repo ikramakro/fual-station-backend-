@@ -9,6 +9,7 @@ const router = Router();
 router.use(authMiddleware);
 router.get('/current', asyncHandler(ctrl.getCurrentRates));
 router.get('/history', rbac('owner', 'manager'), asyncHandler(ctrl.getRateHistory));
+router.post('/bulk', rbac('owner', 'manager'), asyncHandler(ctrl.bulkUpdateRates));
 router.post('/', rbac('owner', 'manager'), asyncHandler(ctrl.setFuelRate));
 
 export default router;

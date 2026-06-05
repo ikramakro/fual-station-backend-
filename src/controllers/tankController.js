@@ -1,5 +1,5 @@
 import Tank from '../models/Tank.js';
-import { getTankStockHistory } from '../services/stockService.js';
+import { getTankStockHistory, transferStock as doTransferStock } from '../services/stockService.js';
 import { success, paginated } from '../utils/response.js';
 import { getPagination, buildPaginationMeta, buildSearchFilter } from '../utils/pagination.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -58,4 +58,25 @@ export const getTankStock = async (req, res) => {
     ? Math.round((tank.current_stock_liters / tank.capacity_liters) * 100)
     : 0;
   success(res, { tank, percentage, movements });
+};
+
+export const transferStock = async (req, res) => {
+  const { from_tank_id, to_tank_id, product_id, quantity } = req.body;
+  const fromTank = await Tank.findOne({ _id: from_tank_id, station_id: req.user.station_id });
+  const toTank = await Tank.findOne({ _id: to_tank_id, station_id: req.user.station_id });
+  if (!fromTank || !toTank) throw new AppError('Tank not found', 404);
+  if (fromTank.fuel_type !== toTank.fuel_type) {
+    throw new AppError('Tanks must have the same fuel type for transfer', 400);
+  }
+
+  const result = await doTransferStock({
+    stationId: req.user.station_id,
+    fromTankId: from_tank_id,
+    toTankId: to_tank_id,
+    productId: product_id,
+    quantity,
+    referenceId: from_tank_id,
+    userId: req.user._id,
+  });
+  success(res, result, 'Stock transferred');
 };

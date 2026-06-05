@@ -2,11 +2,14 @@ import DipReading from '../models/DipReading.js';
 import DipCalibrationChart from '../models/DipCalibrationChart.js';
 import GainLossVoucher from '../models/GainLossVoucher.js';
 import Shift from '../models/Shift.js';
+import Tank from '../models/Tank.js';
+import Product from '../models/Product.js';
 import {
   interpolateLitersFromChart,
   calculateBookStock,
   getCalibrationChart,
 } from '../services/reportService.js';
+import { recordGainLossStock } from '../services/stockService.js';
 import { success, paginated } from '../utils/response.js';
 import { getPagination, buildPaginationMeta, buildDateFilter } from '../utils/pagination.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -68,11 +71,15 @@ export const updateCalibration = async (req, res) => {
 
 export const createGainLoss = async (req, res) => {
   const { tank_id, physical_stock, shift_id, reason } = req.body;
+  const tank = await Tank.findOne({ _id: tank_id, station_id: req.user.station_id });
+  if (!tank) throw new AppError('Tank not found', 404);
+
   const periodStart = new Date();
   periodStart.setHours(0, 0, 0, 0);
   const book_stock = await calculateBookStock(tank_id, periodStart, new Date());
   const difference = physical_stock - book_stock;
   const type = difference >= 0 ? 'gain' : 'loss';
+  const absDifference = Math.abs(difference);
 
   const voucher = await GainLossVoucher.create({
     tank_id,
@@ -85,6 +92,25 @@ export const createGainLoss = async (req, res) => {
     approved_by: req.user._id,
     station_id: req.user.station_id,
   });
+
+  if (absDifference > 0) {
+    const product = await Product.findOne({
+      station_id: req.user.station_id,
+      is_fuel: true,
+      is_active: true,
+      name: new RegExp(tank.fuel_type, 'i'),
+    });
+    await recordGainLossStock({
+      stationId: req.user.station_id,
+      tankId: tank_id,
+      productId: product?._id,
+      type,
+      quantity: absDifference,
+      referenceId: voucher._id,
+      userId: req.user._id,
+    });
+  }
+
   success(res, voucher, 'Gain/loss voucher created', 201);
 };
 

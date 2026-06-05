@@ -50,7 +50,15 @@ export const deleteUser = async (req, res) => {
 export const setPin = async (req, res) => {
   const { pin } = req.body;
   if (!/^\d{4}$/.test(pin)) throw new AppError('PIN must be 4 digits', 400);
-  const user = await User.findOne({ _id: req.params.id, station_id: req.user.station_id });
+
+  const isSelf = req.params.id === req.user._id.toString();
+  const canManage = ['owner', 'manager', 'super_admin'].includes(req.user.role);
+  if (!isSelf && !canManage) throw new AppError('Insufficient permissions', 403);
+
+  const filter = { _id: req.params.id };
+  if (req.user.role !== 'super_admin') filter.station_id = req.user.station_id;
+
+  const user = await User.findOne(filter);
   if (!user) throw new AppError('User not found', 404);
   user.pin = pin;
   await user.save();

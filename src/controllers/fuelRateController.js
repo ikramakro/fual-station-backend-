@@ -56,3 +56,35 @@ export const setFuelRate = async (req, res) => {
 
   success(res, rate, 'Fuel rate updated', 201);
 };
+
+export const bulkUpdateRates = async (req, res) => {
+  const { rates, effective_from } = req.body;
+  if (!Array.isArray(rates) || rates.length === 0) {
+    throw new AppError('Rates array required', 400);
+  }
+
+  const updated = [];
+  for (const { product_id, price_per_liter } of rates) {
+    const product = await Product.findOne({ _id: product_id, station_id: req.user.station_id, is_fuel: true });
+    if (!product) continue;
+
+    await FuelRate.updateMany(
+      { station_id: req.user.station_id, product_id, effective_to: null },
+      { effective_to: new Date() }
+    );
+
+    const rate = await FuelRate.create({
+      product_id,
+      price_per_liter,
+      effective_from: effective_from || new Date(),
+      set_by: req.user._id,
+      station_id: req.user.station_id,
+    });
+
+    product.current_price = price_per_liter;
+    await product.save();
+    updated.push(rate);
+  }
+
+  success(res, updated, 'Bulk fuel rates updated', 201);
+};

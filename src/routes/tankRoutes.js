@@ -9,6 +9,7 @@ const router = Router();
 router.use(authMiddleware);
 router.get('/', asyncHandler(ctrl.listTanks));
 router.post('/', rbac('owner', 'manager'), asyncHandler(ctrl.createTank));
+router.post('/transfer', rbac('owner', 'manager'), asyncHandler(ctrl.transferStock));
 router.get('/:id/stock', asyncHandler(ctrl.getTankStock));
 router.get('/:id', asyncHandler(ctrl.getTank));
 router.put('/:id', rbac('owner', 'manager'), asyncHandler(ctrl.updateTank));

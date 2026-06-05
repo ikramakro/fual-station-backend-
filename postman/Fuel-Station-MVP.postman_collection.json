@@ -1,0 +1,780 @@
+{
+  "info": {
+    "_postman_id": "fuel-station-mvp-api",
+    "name": "Fuel Station MVP API",
+    "description": "Complete API collection for Fuel Station MVP backend.\n\n## Setup\n1. Run `npm run seed` to load demo data\n2. Login as Owner → token saved automatically\n3. Use `stationId` from seed output for PIN login\n\n**Important:** Use port **5001** (not 5000). On macOS, port 5000 is used by AirPlay and returns a blank 403 error.\n\n## Demo Credentials\n- Super Admin: superadmin@cityfuel.com / SuperAdmin@123\n- Owner: admin@cityfuel.com / Admin@123\n- Manager: manager@cityfuel.com / Manager@123\n- Cashier: cashier@cityfuel.com / Cashier@123\n- Cashier PIN: 5678",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5001/api" },
+    { "key": "serverUrl", "value": "http://localhost:5001" },
+    { "key": "token", "value": "" },
+    { "key": "stationId", "value": "" },
+    { "key": "supplierId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "tankId", "value": "" },
+    { "key": "nozzleId", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "shiftId", "value": "" },
+    { "key": "saleId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "0. Auth",
+      "item": [
+        {
+          "name": "Login (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "if (res.data?.token) {",
+                "  pm.collectionVariables.set('token', res.data.token);",
+                "  if (res.data.user?.station_id) pm.collectionVariables.set('stationId', res.data.user.station_id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@cityfuel.com\",\n  \"password\": \"Admin@123\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login (Super Admin)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["const res = pm.response.json(); if (res.data?.token) pm.collectionVariables.set('token', res.data.token);"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"superadmin@cityfuel.com\",\n  \"password\": \"SuperAdmin@123\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "PIN Login (Cashier)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["const res = pm.response.json(); if (res.data?.token) pm.collectionVariables.set('token', res.data.token);"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pin\": \"5678\",\n  \"station_id\": \"{{stationId}}\"\n}" },
+            "url": "{{baseUrl}}/auth/pin-login"
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"Admin@123\",\n  \"newPassword\": \"Admin@123\"\n}" },
+            "url": "{{baseUrl}}/auth/change-password"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" }
+        }
+      ]
+    },
+    {
+      "name": "1. Roles & Permissions",
+      "item": [
+        {
+          "name": "List All Roles & Permissions",
+          "request": { "method": "GET", "url": "{{baseUrl}}/permissions/roles" }
+        },
+        {
+          "name": "Get My Permissions",
+          "request": { "method": "GET", "url": "{{baseUrl}}/permissions/me" }
+        },
+        {
+          "name": "List Audit Logs",
+          "request": { "method": "GET", "url": "{{baseUrl}}/audit-logs?page=1&limit=20" }
+        },
+        {
+          "name": "List Users",
+          "request": { "method": "GET", "url": "{{baseUrl}}/users" }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"New Cashier\",\n  \"email\": \"newcashier@cityfuel.com\",\n  \"password\": \"Cashier@123\",\n  \"pin\": \"9999\",\n  \"role\": \"cashier\",\n  \"phone\": \"+92-300-9999999\"\n}" },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Set User PIN",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pin\": \"4321\"\n}" },
+            "url": "{{baseUrl}}/users/:userId/pin"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Stations (Super Admin)",
+      "item": [
+        {
+          "name": "List All Stations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/stations/all" }
+        },
+        {
+          "name": "Create Station",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Highway Fuel Stop\",\n  \"address\": \"M2 Motorway KM 45\",\n  \"city\": \"Sheikhupura\",\n  \"phone\": \"+92-42-9999999\",\n  \"ntn\": \"9999999-9\",\n  \"strn\": \"STRN-111111\"\n}" },
+            "url": "{{baseUrl}}/stations"
+          }
+        },
+        {
+          "name": "Get Current Station",
+          "request": { "method": "GET", "url": "{{baseUrl}}/stations" }
+        },
+        {
+          "name": "Update Station",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+92-42-1234567\"\n}" },
+            "url": "{{baseUrl}}/stations"
+          }
+        },
+        {
+          "name": "Get Alert Settings",
+          "request": { "method": "GET", "url": "{{baseUrl}}/stations/alert-settings" }
+        },
+        {
+          "name": "Update Alert Settings",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"low_fuel_alert_threshold_pct\": 20,\n  \"alert_channels\": [\"in_app\", \"email\"]\n}" },
+            "url": "{{baseUrl}}/stations/alert-settings"
+          }
+        },
+        {
+          "name": "Check Low Fuel Alerts",
+          "request": { "method": "POST", "url": "{{baseUrl}}/stations/alerts/check" }
+        },
+        {
+          "name": "List Low Fuel Alerts",
+          "request": { "method": "GET", "url": "{{baseUrl}}/stations/alerts?status=active" }
+        },
+        {
+          "name": "Resolve Low Fuel Alert",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/stations/alerts/:alertId/resolve" }
+        }
+      ]
+    },
+    {
+      "name": "3. Purchase Module",
+      "item": [
+        {
+          "name": "Suppliers",
+          "item": [
+            {
+              "name": "List Suppliers",
+              "request": { "method": "GET", "url": "{{baseUrl}}/suppliers" }
+            },
+            {
+              "name": "Create Supplier",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); if (res.data?._id) pm.collectionVariables.set('supplierId', res.data._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"New Fuel Supplier\",\n  \"contact_person\": \"Ahmed Ali\",\n  \"phone\": \"+92-300-1234567\",\n  \"email\": \"ahmed@supplier.com\",\n  \"ntn\": \"1234567-1\",\n  \"strn\": \"STRN-123456\",\n  \"credit_limit\": 2000000,\n  \"credit_days\": 30,\n  \"opening_balance\": 0,\n  \"current_balance\": 0\n}" },
+                "url": "{{baseUrl}}/suppliers"
+              }
+            },
+            {
+              "name": "Get Supplier",
+              "request": { "method": "GET", "url": "{{baseUrl}}/suppliers/{{supplierId}}" }
+            },
+            {
+              "name": "Get Supplier Balance",
+              "request": { "method": "GET", "url": "{{baseUrl}}/suppliers/{{supplierId}}/balance" }
+            },
+            {
+              "name": "Update Supplier",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"credit_limit\": 2500000\n}" },
+                "url": "{{baseUrl}}/suppliers/{{supplierId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Products",
+          "item": [
+            {
+              "name": "List Product Categories",
+              "request": { "method": "GET", "url": "{{baseUrl}}/products/categories" }
+            },
+            {
+              "name": "Create Category",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Additives\",\n  \"is_returnable\": true\n}" },
+                "url": "{{baseUrl}}/products/categories"
+              }
+            },
+            {
+              "name": "List Products",
+              "request": { "method": "GET", "url": "{{baseUrl}}/products" }
+            },
+            {
+              "name": "Create Product (Lubricant)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Fuel Injector Cleaner\",\n  \"category_id\": \"{{categoryId}}\",\n  \"unit\": \"piece\",\n  \"current_price\": 850,\n  \"is_fuel\": false\n}" },
+                "url": "{{baseUrl}}/products"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase Orders",
+          "item": [
+            {
+              "name": "List Purchase Orders",
+              "request": { "method": "GET", "url": "{{baseUrl}}/purchases/orders" }
+            },
+            {
+              "name": "Create PO (Draft)",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); if (res.data?._id) pm.collectionVariables.set('orderId', res.data._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"supplier_id\": \"{{supplierId}}\",\n  \"status\": \"draft\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity_ordered\": 10000,\n      \"unit_price\": 250,\n      \"subtotal\": 2500000,\n      \"tank_id\": \"{{tankId}}\"\n    }\n  ],\n  \"notes\": \"Monthly diesel delivery\"\n}" },
+                "url": "{{baseUrl}}/purchases/orders"
+              }
+            },
+            {
+              "name": "Create PO (Ordered)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"supplier_id\": \"{{supplierId}}\",\n  \"status\": \"ordered\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity_ordered\": 5000,\n      \"unit_price\": 270,\n      \"subtotal\": 1350000,\n      \"tank_id\": \"{{tankId}}\"\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/purchases/orders"
+              }
+            },
+            {
+              "name": "Update PO",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"ordered\",\n  \"notes\": \"Updated order notes\"\n}" },
+                "url": "{{baseUrl}}/purchases/orders/{{orderId}}"
+              }
+            },
+            {
+              "name": "Update Delivery Info",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"delivery_vehicle_no\": \"LEA-1234\",\n  \"driver_name\": \"Muhammad Khan\"\n}" },
+                "url": "{{baseUrl}}/purchases/orders/{{orderId}}/delivery"
+              }
+            },
+            {
+              "name": "Receive PO",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"delivery_vehicle_no\": \"LEA-1234\",\n  \"driver_name\": \"Muhammad Khan\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity_received\": 5000\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/purchases/orders/{{orderId}}/receive"
+              }
+            },
+            {
+              "name": "Cancel PO",
+              "request": { "method": "PUT", "url": "{{baseUrl}}/purchases/orders/{{orderId}}/cancel" }
+            },
+            {
+              "name": "Get PO",
+              "request": { "method": "GET", "url": "{{baseUrl}}/purchases/orders/{{orderId}}" }
+            }
+          ]
+        },
+        {
+          "name": "Payments & Returns",
+          "item": [
+            {
+              "name": "List Purchase Payments",
+              "request": { "method": "GET", "url": "{{baseUrl}}/purchases/payments" }
+            },
+            {
+              "name": "Record Supplier Payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"supplier_id\": \"{{supplierId}}\",\n  \"amount\": 500000,\n  \"payment_method\": \"bank_transfer\",\n  \"reference_no\": \"TXN-001\",\n  \"payment_date\": \"2026-06-05\"\n}" },
+                "url": "{{baseUrl}}/purchases/payments"
+              }
+            },
+            {
+              "name": "Create Purchase Return (Lubricant)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"purchase_order_id\": \"{{orderId}}\",\n  \"supplier_id\": \"{{supplierId}}\",\n  \"reason\": \"Damaged packaging\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity\": 5,\n      \"unit_price\": 2500,\n      \"subtotal\": 12500\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/purchases/returns"
+              }
+            },
+            {
+              "name": "Approve Purchase Return",
+              "request": { "method": "PUT", "url": "{{baseUrl}}/purchases/returns/:returnId/approve" }
+            },
+            {
+              "name": "Reject Purchase Return",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"Return window expired\"\n}" },
+                "url": "{{baseUrl}}/purchases/returns/:returnId/reject"
+              }
+            },
+            {
+              "name": "List Purchase Returns",
+              "request": { "method": "GET", "url": "{{baseUrl}}/purchases/returns" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Inventory & Tanks",
+      "item": [
+        {
+          "name": "Tanks",
+          "item": [
+            {
+              "name": "List Tanks",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); const t = res.data?.[0] || res.data?.items?.[0]; if (t?._id) pm.collectionVariables.set('tankId', t._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": { "method": "GET", "url": "{{baseUrl}}/tanks" }
+            },
+            {
+              "name": "Create Tank",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"code\": \"T-NEW\",\n  \"name\": \"New Diesel Tank\",\n  \"fuel_type\": \"diesel\",\n  \"capacity_liters\": 60000,\n  \"current_stock_liters\": 0,\n  \"min_stock_threshold\": 6000,\n  \"is_underground\": true\n}" },
+                "url": "{{baseUrl}}/tanks"
+              }
+            },
+            {
+              "name": "Get Tank Stock & Ledger",
+              "request": { "method": "GET", "url": "{{baseUrl}}/tanks/{{tankId}}/stock" }
+            },
+            {
+              "name": "Transfer Stock Between Tanks",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"from_tank_id\": \"{{tankId}}\",\n  \"to_tank_id\": \"{{destTankId}}\",\n  \"product_id\": \"{{productId}}\",\n  \"quantity\": 500\n}" },
+                "url": "{{baseUrl}}/tanks/transfer"
+              }
+            },
+            {
+              "name": "Update Tank",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"min_stock_threshold\": 7000\n}" },
+                "url": "{{baseUrl}}/tanks/{{tankId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nozzles",
+          "item": [
+            {
+              "name": "List Nozzles",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); const n = res.data?.[0] || res.data?.items?.[0]; if (n?._id) pm.collectionVariables.set('nozzleId', n._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": { "method": "GET", "url": "{{baseUrl}}/nozzles" }
+            },
+            {
+              "name": "Create Nozzle",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"code\": \"N-NEW-1\",\n  \"name\": \"New Nozzle 1\",\n  \"tank_id\": \"{{tankId}}\"\n}" },
+                "url": "{{baseUrl}}/nozzles"
+              }
+            },
+            {
+              "name": "Record Nozzle Reading",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"opening_reading\": 125000,\n  \"closing_reading\": 125450,\n  \"test_reading\": 0\n}" },
+                "url": "{{baseUrl}}/nozzles/{{nozzleId}}/readings"
+              }
+            },
+            {
+              "name": "List Nozzle Readings",
+              "request": { "method": "GET", "url": "{{baseUrl}}/nozzles/{{nozzleId}}/readings" }
+            }
+          ]
+        },
+        {
+          "name": "Dip Readings & Gain/Loss",
+          "item": [
+            {
+              "name": "Create Dip Reading",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"tank_id\": \"{{tankId}}\",\n  \"reading_mm\": 1500,\n  \"temperature\": 28,\n  \"density\": 0.82\n}" },
+                "url": "{{baseUrl}}/dip-readings"
+              }
+            },
+            {
+              "name": "List Dip Readings",
+              "request": { "method": "GET", "url": "{{baseUrl}}/dip-readings?tank_id={{tankId}}" }
+            },
+            {
+              "name": "Get Calibration Chart",
+              "request": { "method": "GET", "url": "{{baseUrl}}/dip-readings/calibration/{{tankId}}" }
+            },
+            {
+              "name": "Update Calibration Chart",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"entries\": [\n    { \"mm\": 0, \"liters\": 0 },\n    { \"mm\": 500, \"liters\": 12500 },\n    { \"mm\": 1000, \"liters\": 25000 },\n    { \"mm\": 1500, \"liters\": 37500 },\n    { \"mm\": 2000, \"liters\": 50000 }\n  ]\n}" },
+                "url": "{{baseUrl}}/dip-readings/calibration/{{tankId}}"
+              }
+            },
+            {
+              "name": "Create Gain/Loss Voucher",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"tank_id\": \"{{tankId}}\",\n  \"physical_stock\": 34500,\n  \"shift_id\": \"{{shiftId}}\",\n  \"reason\": \"Daily dip reconciliation\"\n}" },
+                "url": "{{baseUrl}}/dip-readings/gain-loss"
+              }
+            },
+            {
+              "name": "List Gain/Loss Vouchers",
+              "request": { "method": "GET", "url": "{{baseUrl}}/dip-readings/gain-loss?tank_id={{tankId}}" }
+            }
+          ]
+        },
+        {
+          "name": "Stock Ledger Report",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/stock-ledger?tank_id={{tankId}}" }
+        }
+      ]
+    },
+    {
+      "name": "5. Sales Module",
+      "item": [
+        {
+          "name": "Customers",
+          "item": [
+            {
+              "name": "List Customers",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); const c = res.data?.[0] || res.data?.items?.[0]; if (c?._id) pm.collectionVariables.set('customerId', c._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": { "method": "GET", "url": "{{baseUrl}}/customers" }
+            },
+            {
+              "name": "Create Credit Customer",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Fleet Transport Ltd\",\n  \"phone\": \"0300-555-0001\",\n  \"email\": \"fleet@transport.com\",\n  \"customer_type\": \"corporate\",\n  \"credit_limit\": 500000,\n  \"credit_days\": 30\n}" },
+                "url": "{{baseUrl}}/customers"
+              }
+            },
+            {
+              "name": "Get Customer Balance & Aging",
+              "request": { "method": "GET", "url": "{{baseUrl}}/customers/{{customerId}}/balance" }
+            },
+            {
+              "name": "Add Vehicle",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"vehicle_number\": \"LEA-5678\",\n  \"vehicle_type\": \"tanker\",\n  \"fuel_type\": \"diesel\"\n}" },
+                "url": "{{baseUrl}}/customers/{{customerId}}/vehicles"
+              }
+            },
+            {
+              "name": "Update Vehicle",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"vehicle_type\": \"truck\"\n}" },
+                "url": "{{baseUrl}}/customers/{{customerId}}/vehicles/:vehicleId"
+              }
+            },
+            {
+              "name": "Record Customer Payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"amount\": 50000,\n  \"payment_method\": \"cash\",\n  \"reference_no\": \"RCP-001\"\n}" },
+                "url": "{{baseUrl}}/customers/{{customerId}}/payments"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fuel Rates",
+          "item": [
+            {
+              "name": "Get Current Fuel Rates",
+              "request": { "method": "GET", "url": "{{baseUrl}}/fuel-rates/current" }
+            },
+            {
+              "name": "Set Fuel Rate",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"product_id\": \"{{productId}}\",\n  \"price_per_liter\": 295,\n  \"effective_from\": \"2026-06-05T00:00:00.000Z\"\n}" },
+                "url": "{{baseUrl}}/fuel-rates"
+              }
+            },
+            {
+              "name": "Bulk Update Fuel Rates",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"effective_from\": \"2026-06-05T00:00:00.000Z\",\n  \"rates\": [\n    { \"product_id\": \"{{productId}}\", \"price_per_liter\": 292 },\n    { \"product_id\": \"{{productId2}}\", \"price_per_liter\": 272 }\n  ]\n}" },
+                "url": "{{baseUrl}}/fuel-rates/bulk"
+              }
+            },
+            {
+              "name": "Fuel Rate History",
+              "request": { "method": "GET", "url": "{{baseUrl}}/fuel-rates/history" }
+            }
+          ]
+        },
+        {
+          "name": "Shifts",
+          "item": [
+            {
+              "name": "Get Current Shift",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); if (res.data?._id) pm.collectionVariables.set('shiftId', res.data._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": { "method": "GET", "url": "{{baseUrl}}/shifts/current" }
+            },
+            {
+              "name": "Open Shift",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"shift_name\": \"morning\",\n  \"opening_cash\": 10000\n}" },
+                "url": "{{baseUrl}}/shifts/open"
+              }
+            },
+            {
+              "name": "Close Shift",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"closing_cash\": 85000,\n  \"total_expenses\": 2000\n}" },
+                "url": "{{baseUrl}}/shifts/{{shiftId}}/close"
+              }
+            },
+            {
+              "name": "Approve Shift (Manager)",
+              "request": { "method": "PUT", "url": "{{baseUrl}}/shifts/{{shiftId}}/approve" }
+            },
+            {
+              "name": "List Shifts",
+              "request": { "method": "GET", "url": "{{baseUrl}}/shifts" }
+            }
+          ]
+        },
+        {
+          "name": "Sales (POS)",
+          "item": [
+            {
+              "name": "Create Nozzle Sale (Cash)",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": ["const res = pm.response.json(); if (res.data?._id) pm.collectionVariables.set('saleId', res.data._id);"],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"sale_type\": \"nozzle\",\n  \"nozzle_id\": \"{{nozzleId}}\",\n  \"payment_method\": \"cash\",\n  \"amount_paid\": 5000,\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity\": 15.5,\n      \"unit_price\": 290,\n      \"subtotal\": 4495,\n      \"tank_id\": \"{{tankId}}\"\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/sales"
+              }
+            },
+            {
+              "name": "Create Credit Sale",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"sale_type\": \"credit\",\n  \"customer_id\": \"{{customerId}}\",\n  \"payment_method\": \"credit\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity\": 100,\n      \"unit_price\": 270,\n      \"subtotal\": 27000,\n      \"tank_id\": \"{{tankId}}\"\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/sales"
+              }
+            },
+            {
+              "name": "Create Lubricant Sale",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"sale_type\": \"lubricant\",\n  \"payment_method\": \"cash\",\n  \"amount_paid\": 5000,\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity\": 2,\n      \"unit_price\": 2500,\n      \"subtotal\": 5000\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/sales"
+              }
+            },
+            {
+              "name": "Sync Offline Sales",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"sales\": [\n    {\n      \"offline_id\": \"offline-sale-001\",\n      \"sale_type\": \"nozzle\",\n      \"payment_method\": \"cash\",\n      \"amount_paid\": 3000,\n      \"created_at\": \"2026-06-05T10:30:00.000Z\",\n      \"items\": [\n        {\n          \"product_id\": \"{{productId}}\",\n          \"quantity\": 10,\n          \"unit_price\": 290,\n          \"subtotal\": 2900,\n          \"tank_id\": \"{{tankId}}\"\n        }\n      ]\n    }\n  ]\n}" },
+                "url": "{{baseUrl}}/sales/sync"
+              }
+            },
+            {
+              "name": "List Sales",
+              "request": { "method": "GET", "url": "{{baseUrl}}/sales?sale_type=nozzle" }
+            },
+            {
+              "name": "Get Sale",
+              "request": { "method": "GET", "url": "{{baseUrl}}/sales/{{saleId}}" }
+            },
+            {
+              "name": "Void Sale",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"void_reason\": \"Wrong quantity entered\"\n}" },
+                "url": "{{baseUrl}}/sales/{{saleId}}/void"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Reports & Dashboard",
+      "item": [
+        {
+          "name": "Dashboard Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/dashboard/summary" }
+        },
+        {
+          "name": "Sales Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/sales-summary" }
+        },
+        {
+          "name": "Purchase Summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/purchase-summary" }
+        },
+        {
+          "name": "Customer Aging (30/60/90+)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/customer-aging" }
+        },
+        {
+          "name": "Gain/Loss Report",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/gain-loss" }
+        },
+        {
+          "name": "Trial Balance",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/trial-balance" }
+        },
+        {
+          "name": "Profit & Loss",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/profit-loss" }
+        },
+        {
+          "name": "Payable/Receivable",
+          "request": { "method": "GET", "url": "{{baseUrl}}/reports/payable-receivable" }
+        }
+      ]
+    },
+    {
+      "name": "7. Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{serverUrl}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}

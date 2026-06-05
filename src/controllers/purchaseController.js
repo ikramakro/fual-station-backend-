@@ -2,6 +2,8 @@ import PurchaseOrder from '../models/PurchaseOrder.js';
 import PurchasePayment from '../models/PurchasePayment.js';
 import PurchaseReturn from '../models/PurchaseReturn.js';
 import Supplier from '../models/Supplier.js';
+import Product from '../models/Product.js';
+import ProductCategory from '../models/ProductCategory.js';
 import { generateSequenceNumber } from '../utils/sequenceGenerator.js';
 import { receivePurchaseStock, returnPurchaseStock } from '../services/stockService.js';
 import * as accounting from '../services/accountingService.js';
@@ -30,12 +32,57 @@ export const createOrder = async (req, res) => {
     po_number: poNumber,
     items,
     total_amount,
-    ordered_by: req.user._id,
-    ordered_at: new Date(),
+    ordered_by: req.body.status === 'draft' ? undefined : req.user._id,
+    ordered_at: req.body.status === 'draft' ? undefined : new Date(),
     status: req.body.status || 'ordered',
     station_id: req.user.station_id,
   });
   success(res, order, 'Purchase order created', 201);
+};
+
+export const updateOrder = async (req, res) => {
+  const order = await PurchaseOrder.findOne({
+    _id: req.params.id,
+    station_id: req.user.station_id,
+    status: { $in: ['draft', 'ordered'] },
+  });
+  if (!order) throw new AppError('Order not found or cannot be updated', 404);
+
+  const items = req.body.items ?? order.items;
+  const total_amount = items.reduce(
+    (s, i) => s + (i.subtotal || (i.quantity_ordered || i.quantity) * i.unit_price),
+    0
+  );
+
+  if (req.body.supplier_id) order.supplier_id = req.body.supplier_id;
+  if (req.body.items) order.items = items;
+  if (req.body.notes !== undefined) order.notes = req.body.notes;
+  if (req.body.delivery_vehicle_no !== undefined) order.delivery_vehicle_no = req.body.delivery_vehicle_no;
+  if (req.body.driver_name !== undefined) order.driver_name = req.body.driver_name;
+  order.total_amount = total_amount;
+
+  if (req.body.status === 'ordered' && order.status === 'draft') {
+    order.status = 'ordered';
+    order.ordered_by = req.user._id;
+    order.ordered_at = new Date();
+  }
+
+  await order.save();
+  success(res, order, 'Purchase order updated');
+};
+
+export const updateDeliveryInfo = async (req, res) => {
+  const order = await PurchaseOrder.findOne({
+    _id: req.params.id,
+    station_id: req.user.station_id,
+    status: { $in: ['ordered', 'partial'] },
+  });
+  if (!order) throw new AppError('Order not found or delivery info cannot be updated', 404);
+
+  if (req.body.delivery_vehicle_no !== undefined) order.delivery_vehicle_no = req.body.delivery_vehicle_no;
+  if (req.body.driver_name !== undefined) order.driver_name = req.body.driver_name;
+  await order.save();
+  success(res, order, 'Delivery info updated');
 };
 
 export const getOrder = async (req, res) => {
@@ -64,6 +111,9 @@ export const receiveOrder = async (req, res) => {
     receivedTotal += item.subtotal;
     return item;
   });
+
+  if (req.body.delivery_vehicle_no) order.delivery_vehicle_no = req.body.delivery_vehicle_no;
+  if (req.body.driver_name) order.driver_name = req.body.driver_name;
 
   const allReceived = order.items.every((i) => i.quantity_received >= i.quantity_ordered);
   order.status = allReceived ? 'received' : 'partial';
@@ -161,6 +211,16 @@ export const listReturns = async (req, res) => {
 export const createReturn = async (req, res) => {
   const returnNumber = await generateSequenceNumber(req.user.station_id, 'RETURN', 'RET');
   const items = req.body.items || [];
+
+  for (const item of items) {
+    const product = await Product.findOne({ _id: item.product_id, station_id: req.user.station_id });
+    if (!product) throw new AppError(`Product not found`, 404);
+    const category = await ProductCategory.findById(product.category_id);
+    if (!category?.is_returnable) {
+      throw new AppError(`Product "${product.name}" is not returnable (fuel cannot be returned)`, 400);
+    }
+  }
+
   const ret = await PurchaseReturn.create({
     ...req.body,
     return_number: returnNumber,
@@ -194,4 +254,22 @@ export const approveReturn = async (req, res) => {
   await Supplier.findByIdAndUpdate(ret.supplier_id, { $inc: { current_balance: -total } });
 
   success(res, ret, 'Return approved');
+};
+
+export const rejectReturn = async (req, res) => {
+  const ret = await PurchaseReturn.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      station_id: req.user.station_id,
+      status: 'pending',
+    },
+    {
+      status: 'rejected',
+      approved_by: req.user._id,
+      rejection_reason: req.body.rejection_reason || 'Rejected by manager',
+    },
+    { new: true }
+  );
+  if (!ret) throw new AppError('Return not found or already processed', 404);
+  success(res, ret, 'Return rejected');
 };

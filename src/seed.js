@@ -90,6 +90,15 @@ async function seed() {
     is_active: true,
   });
 
+  await User.create({
+    name: 'Super Admin',
+    email: 'superadmin@cityfuel.com',
+    phone: '+92-300-0000000',
+    password: 'SuperAdmin@123',
+    role: 'super_admin',
+    is_active: true,
+  });
+
   const manager = await User.create({
     name: 'Shift Manager',
     email: 'manager@cityfuel.com',
@@ -235,6 +244,7 @@ async function seed() {
   console.log('\nStation:', station.name, '|', station.city);
   console.log('Station ID (POS PIN):', station._id.toString());
   console.log('\n--- Login (Dashboard) ---');
+  console.log('Super Admin: superadmin@cityfuel.com / SuperAdmin@123');
   console.log('Owner:       admin@cityfuel.com     / Admin@123');
   console.log('Manager:     manager@cityfuel.com   / Manager@123');
   console.log('Shift Lead:  lead@cityfuel.com      / Lead@123');

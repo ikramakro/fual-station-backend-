@@ -46,6 +46,22 @@ export const deleteNozzle = async (req, res) => {
   success(res, nozzle, 'Nozzle deactivated');
 };
 
+export const listNozzleReadings = async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+  const filter = { station_id: req.user.station_id, nozzle_id: req.params.id };
+  if (req.query.shift_id) filter.shift_id = req.query.shift_id;
+  const [items, total] = await Promise.all([
+    NozzleReading.find(filter)
+      .populate('shift_id', 'shift_name status')
+      .populate('recorded_by', 'name')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+    NozzleReading.countDocuments(filter),
+  ]);
+  paginated(res, items, buildPaginationMeta(total, page, limit));
+};
+
 export const recordNozzleReading = async (req, res) => {
   const shift = await Shift.findOne({ station_id: req.user.station_id, status: 'open' });
   if (!shift) throw new AppError('No open shift', 400);

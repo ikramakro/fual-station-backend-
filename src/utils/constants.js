@@ -1,6 +1,7 @@
-export const ROLES = ['owner', 'manager', 'shift_lead', 'cashier'];
+export const ROLES = ['super_admin', 'owner', 'manager', 'shift_lead', 'cashier'];
 
 export const ROLE_HIERARCHY = {
+  super_admin: 5,
   owner: 4,
   manager: 3,
   shift_lead: 2,

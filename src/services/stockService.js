@@ -129,3 +129,54 @@ export async function returnPurchaseStock({ stationId, items, referenceId, userI
 export async function getTankStockHistory(tankId, limit = 20) {
   return StockLedger.find({ tank_id: tankId }).sort({ createdAt: -1 }).limit(limit);
 }
+
+export async function recordGainLossStock({ stationId, tankId, productId, type, quantity, referenceId, userId }) {
+  const transactionType = type === 'gain' ? 'gain' : 'loss';
+  return recordStockMovement({
+    stationId,
+    productId,
+    tankId,
+    transactionType,
+    referenceId,
+    referenceType: 'GainLossVoucher',
+    quantityIn: type === 'gain' ? quantity : 0,
+    quantityOut: type === 'loss' ? quantity : 0,
+    userId,
+  });
+}
+
+export async function transferStock({
+  stationId,
+  fromTankId,
+  toTankId,
+  productId,
+  quantity,
+  referenceId,
+  userId,
+}) {
+  if (fromTankId === toTankId) throw new AppError('Source and destination tanks must differ', 400);
+
+  const outEntry = await recordStockMovement({
+    stationId,
+    productId,
+    tankId: fromTankId,
+    transactionType: 'transfer',
+    referenceId,
+    referenceType: 'StockTransfer',
+    quantityOut: quantity,
+    userId,
+  });
+
+  const inEntry = await recordStockMovement({
+    stationId,
+    productId,
+    tankId: toTankId,
+    transactionType: 'transfer',
+    referenceId,
+    referenceType: 'StockTransfer',
+    quantityIn: quantity,
+    userId,
+  });
+
+  return { outEntry, inEntry };
+}

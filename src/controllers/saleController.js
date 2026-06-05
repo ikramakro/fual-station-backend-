@@ -132,3 +132,97 @@ export const voidSale = async (req, res) => {
 
   success(res, sale, 'Sale voided');
 };
+
+export const syncOfflineSales = async (req, res) => {
+  const sales = req.body.sales || [];
+  if (!Array.isArray(sales) || sales.length === 0) {
+    throw new AppError('Sales array required', 400);
+  }
+
+  const shift = await Shift.findOne({ station_id: req.user.station_id, status: 'open' });
+  if (!shift) throw new AppError('No open shift. Open a shift first.', 400);
+
+  const results = { synced: [], skipped: [], failed: [] };
+
+  for (const saleData of sales) {
+    try {
+      if (!saleData.offline_id) {
+        results.failed.push({ offline_id: null, error: 'offline_id required' });
+        continue;
+      }
+
+      const existing = await Sale.findOne({
+        station_id: req.user.station_id,
+        offline_id: saleData.offline_id,
+      });
+      if (existing) {
+        results.skipped.push({ offline_id: saleData.offline_id, sale_id: existing._id });
+        continue;
+      }
+
+      const items = saleData.items || [];
+      const subtotal = items.reduce((s, i) => s + (i.subtotal || i.quantity * i.unit_price), 0);
+      const discount = saleData.discount || 0;
+      const total_amount = subtotal - discount;
+
+      if (saleData.payment_method === 'credit' && saleData.customer_id) {
+        const customer = await Customer.findById(saleData.customer_id);
+        if (!customer) throw new AppError('Customer not found', 404);
+        if (customer.current_balance + total_amount > customer.credit_limit) {
+          throw new AppError('Credit limit exceeded', 400);
+        }
+      }
+
+      const saleNumber = await generateSequenceNumber(req.user.station_id, 'SALE', 'SALE');
+      const amount_paid = saleData.amount_paid ?? total_amount;
+      const change_given = Math.max(0, amount_paid - total_amount);
+
+      const sale = await Sale.create({
+        ...saleData,
+        sale_number: saleNumber,
+        items,
+        subtotal,
+        discount,
+        total_amount,
+        amount_paid,
+        change_given,
+        shift_id: shift._id,
+        cashier_id: req.user._id,
+        station_id: req.user.station_id,
+        is_offline: true,
+        synced_at: new Date(),
+        createdAt: saleData.created_at || new Date(),
+      });
+
+      await deductSaleStock({
+        stationId: req.user.station_id,
+        items,
+        referenceId: sale._id,
+        userId: req.user._id,
+      });
+
+      if (saleData.payment_method === 'credit' && saleData.customer_id) {
+        await Customer.findByIdAndUpdate(saleData.customer_id, { $inc: { current_balance: total_amount } });
+        await accounting.recordCreditSale({
+          stationId: req.user.station_id,
+          userId: req.user._id,
+          amount: total_amount,
+          saleNumber,
+        });
+      } else if (['cash', 'card', 'mobile'].includes(saleData.payment_method)) {
+        await accounting.recordCashSale({
+          stationId: req.user.station_id,
+          userId: req.user._id,
+          amount: total_amount,
+          saleNumber,
+        });
+      }
+
+      results.synced.push({ offline_id: saleData.offline_id, sale_id: sale._id, sale_number: saleNumber });
+    } catch (err) {
+      results.failed.push({ offline_id: saleData.offline_id, error: err.message });
+    }
+  }
+
+  success(res, results, 'Offline sales sync completed');
+};

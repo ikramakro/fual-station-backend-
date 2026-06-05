@@ -80,6 +80,26 @@ export const addVehicle = async (req, res) => {
   success(res, vehicle, 'Vehicle added', 201);
 };
 
+export const updateVehicle = async (req, res) => {
+  const vehicle = await CustomerVehicle.findOneAndUpdate(
+    { _id: req.params.vehicleId, customer_id: req.params.id, station_id: req.user.station_id },
+    req.body,
+    { new: true, runValidators: true }
+  );
+  if (!vehicle) throw new AppError('Vehicle not found', 404);
+  success(res, vehicle, 'Vehicle updated');
+};
+
+export const deleteVehicle = async (req, res) => {
+  const vehicle = await CustomerVehicle.findOneAndDelete({
+    _id: req.params.vehicleId,
+    customer_id: req.params.id,
+    station_id: req.user.station_id,
+  });
+  if (!vehicle) throw new AppError('Vehicle not found', 404);
+  success(res, vehicle, 'Vehicle removed');
+};
+
 export const getTransactions = async (req, res) => {
   const [sales, payments] = await Promise.all([
     Sale.find({ customer_id: req.params.id, station_id: req.user.station_id }).sort({ createdAt: -1 }),

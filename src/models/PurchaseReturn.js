@@ -20,6 +20,7 @@ const purchaseReturnSchema = new mongoose.Schema(
     reason: { type: String, required: true },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     approved_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rejection_reason: { type: String },
     station_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Station', required: true },
   },
   { timestamps: true }

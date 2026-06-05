@@ -36,11 +36,15 @@ const saleSchema = new mongoose.Schema(
     is_void: { type: Boolean, default: false },
     voided_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     void_reason: { type: String },
+    offline_id: { type: String },
+    is_offline: { type: Boolean, default: false },
+    synced_at: { type: Date },
   },
   { timestamps: true }
 );
 
 saleSchema.index({ station_id: 1, sale_number: 1 }, { unique: true });
+saleSchema.index({ station_id: 1, offline_id: 1 }, { unique: true, sparse: true });
 saleSchema.index({ station_id: 1, createdAt: -1 });
 
 export default mongoose.model('Sale', saleSchema);

@@ -12,6 +12,8 @@ router.post('/', rbac('owner', 'manager'), asyncHandler(ctrl.createCustomer));
 router.get('/:id/balance', asyncHandler(ctrl.getCustomerBalance));
 router.get('/:id/vehicles', asyncHandler(ctrl.getVehicles));
 router.post('/:id/vehicles', rbac('owner', 'manager'), asyncHandler(ctrl.addVehicle));
+router.put('/:id/vehicles/:vehicleId', rbac('owner', 'manager'), asyncHandler(ctrl.updateVehicle));
+router.delete('/:id/vehicles/:vehicleId', rbac('owner', 'manager'), asyncHandler(ctrl.deleteVehicle));
 router.get('/:id/transactions', asyncHandler(ctrl.getTransactions));
 router.post('/:id/payments', rbac('owner', 'manager'), asyncHandler(ctrl.recordCustomerPayment));
 router.get('/:id', asyncHandler(ctrl.getCustomer));

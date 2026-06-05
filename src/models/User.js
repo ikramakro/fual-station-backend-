@@ -12,7 +12,13 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     pin: { type: String, select: false },
     role: { type: String, enum: ROLES, required: true },
-    station_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Station', required: true },
+    station_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Station',
+      required: function requiredStation() {
+        return this.role !== 'super_admin';
+      },
+    },
     is_active: { type: Boolean, default: true },
     last_login: { type: Date },
     failed_login_attempts: { type: Number, default: 0 },
